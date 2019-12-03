@@ -239,6 +239,7 @@ const ASM_TARGETS: &[(&str, Option<&str>, &str)] = &[
     ("x86", None, "elf"),
     ("arm", Some("ios"), "ios32"),
     ("arm", None, "linux32"),
+    ("wasm32", None, "unknown"),
 ];
 
 const WINDOWS: &str = "windows";
@@ -291,12 +292,16 @@ fn ring_build_rs_main() {
         is_debug,
     };
     let pregenerated = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join(PREGENERATED);
+    eprintln!("*** ring_build_rs_main: arch = {}", target.arch);
 
     build_c_code(&target, pregenerated, &out_dir);
-    check_all_files_tracked()
+    check_all_files_tracked();
+    eprintln!("*** ring_build_rs_main: arch = {} done", target.arch);
 }
 
 fn pregenerate_asm_main() {
+    use std::env;
+    eprintln!("*** pregenerate_asm_main: begin (arch={})", env::var("CARGO_CFG_TARGET_ARCH").unwrap());
     let pregenerated = PathBuf::from(PREGENERATED);
     std::fs::create_dir(&pregenerated).unwrap();
     let pregenerated_tmp = pregenerated.join("tmp");
@@ -324,6 +329,7 @@ fn pregenerate_asm_main() {
             }
         }
     }
+    eprintln!("*** pregenerate_asm_main: end (arch={})", env::var("CARGO_CFG_TARGET_ARCH").unwrap());
 }
 
 struct Target {
@@ -336,10 +342,30 @@ struct Target {
     is_debug: bool,
 }
 
-fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
-    if &target.arch == "wasm32" {
-        return;
+fn cc_add_target_flag(builder: &mut cc::Build, target: &Target) {
+    eprintln!("*** cc_add_target_flag: arch={}", target.arch);
+    if target.arch == "wasm32" {
+        let _ = builder.target("wasm32-unknown-unknown");
     }
+}
+
+fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
+    // if &target.arch == "wasm32" {
+    //     return;
+    // }
+    // if &target.arch == "wasm32" {
+    //     println!("cargo:rerun-if-changed=/home/h4x/ssd2/workspace/experimental-node/ring/wasmcore/libwasmcore");
+
+    //     // let lib_dir = env::var("BAR_LIB_DIR").unwrap();
+    //     // println!("cargo:rustc-link-search=native={}", lib_dir);
+    //     // println!("cargo:rustc-link-lib=static=bar");
+    //     println!("cargo:rerun-if-env-changed=BAR_LIB_DIR");
+    //     println!("cargo:rustc-link-search=native={}", "/home/h4x/ssd2/workspace/experimental-node/ring/wasmcore/libwasmcore");
+    //     println!("cargo:rustc-link-lib=static={}", "wasmcore");  // valid!
+    //     return;
+    // }
+
+    eprintln!("*** build_c_code: inline arch = {}, os = {}", target.arch, target.os);
 
     let includes_modified = RING_INCLUDES
         .iter()
@@ -360,48 +386,55 @@ fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
         }
     }
 
-    let (_, _, perlasm_format) = ASM_TARGETS
+    let warnings_are_errors = target.is_git;
+    let mut asm_srcs_files: Vec<PathBuf> = Vec::new();
+
+    let target_tuple = ASM_TARGETS
         .iter()
         .find(|entry| {
             let &(entry_arch, entry_os, _) = *entry;
             entry_arch == &target.arch && is_none_or_equals(entry_os, &target.os)
-        })
-        .unwrap();
+        });
+    
+    match target_tuple {
+        Some((_, _, perlasm_format)) => {
+            let use_pregenerated = false;
 
-    let use_pregenerated = false;
-    let warnings_are_errors = target.is_git;
-
-    let asm_dir = if use_pregenerated {
-        &pregenerated
-    } else {
-        out_dir
-    };
-
-    let perlasm_src_dsts =
-        perlasm_src_dsts(asm_dir, &target.arch, Some(&target.os), perlasm_format);
-
-    if !use_pregenerated {
-        perlasm(
-            &perlasm_src_dsts[..],
-            &target.arch,
-            perlasm_format,
-            Some(includes_modified),
-        );
+            let asm_dir = if use_pregenerated {
+                &pregenerated
+            } else {
+                out_dir
+            };
+        
+            let perlasm_src_dsts =
+                perlasm_src_dsts(asm_dir, &target.arch, Some(&target.os), perlasm_format);
+        
+            if !use_pregenerated {
+                perlasm(
+                    &perlasm_src_dsts[..],
+                    &target.arch,
+                    perlasm_format,
+                    Some(includes_modified),
+                );
+            }
+        
+            asm_srcs_files = asm_srcs(perlasm_src_dsts);
+        
+            // For Windows we also pregenerate the object files for non-Git builds so
+            // the user doesn't need to install the assembler. On other platforms we
+            // assume the C compiler also assembles.
+            if use_pregenerated && &target.os == WINDOWS {
+                // The pregenerated object files always use ".obj" as the extension,
+                // even when the C/C++ compiler outputs files with the ".o" extension.
+                asm_srcs_files = asm_srcs_files
+                    .iter()
+                    .map(|src| obj_path(&pregenerated, src.as_path(), "obj"))
+                    .collect::<Vec<_>>();
+            }
+        },
+        None => ()
     }
 
-    let mut asm_srcs = asm_srcs(perlasm_src_dsts);
-
-    // For Windows we also pregenerate the object files for non-Git builds so
-    // the user doesn't need to install the assembler. On other platforms we
-    // assume the C compiler also assembles.
-    if use_pregenerated && &target.os == WINDOWS {
-        // The pregenerated object files always use ".obj" as the extension,
-        // even when the C/C++ compiler outputs files with the ".o" extension.
-        asm_srcs = asm_srcs
-            .iter()
-            .map(|src| obj_path(&pregenerated, src.as_path(), "obj"))
-            .collect::<Vec<_>>();
-    }
 
     let core_srcs = sources_for_arch(&target.arch)
         .into_iter()
@@ -411,7 +444,7 @@ fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
     let test_srcs = RING_TEST_SRCS.iter().map(PathBuf::from).collect::<Vec<_>>();
 
     let libs = [
-        ("ring-core", &core_srcs[..], &asm_srcs[..]),
+        ("ring-core", &core_srcs[..], &asm_srcs_files[..]),
         ("ring-test", &test_srcs[..], &[]),
     ];
 
@@ -419,6 +452,7 @@ fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
     // can't do that yet.
     libs.iter()
         .for_each(|&(lib_name, srcs, additional_srcs)| {
+            eprintln!("*** Building lib: {}, src: {:?}", lib_name, srcs);
             build_library(
                 &target,
                 &out_dir,
@@ -462,6 +496,7 @@ fn build_library(
         .any(|p| need_run(&p, &lib_path, includes_modified))
     {
         let mut c = cc::Build::new();
+        cc_add_target_flag(&mut c, target);
 
         for f in LD_FLAGS {
             let _ = c.flag(&f);
@@ -514,6 +549,7 @@ fn compile(
             } else {
                 yasm(p, &target.arch, &out_path)
             };
+            eprintln!("*** cc: {:?}", &cmd);
 
             run_command(cmd);
         }
@@ -535,6 +571,7 @@ fn cc(
     out_dir: &Path,
 ) -> Command {
     let mut c = cc::Build::new();
+    cc_add_target_flag(&mut c, target);
     let _ = c.include("include");
     match ext {
         "c" => {
@@ -592,6 +629,7 @@ fn cc(
         // http://www.openwall.com/lists/musl/2015/06/17/1
         let _ = c.flag("-U_FORTIFY_SOURCE");
     }
+    eprintln!("debug cc::Build: {:?}", c);
 
     let mut c = c.get_compiler().to_command();
     let _ = c
@@ -602,6 +640,7 @@ fn cc(
             out_dir.to_str().expect("Invalid path")
         ))
         .arg(file);
+    eprintln!("cc: resulting command - {:?}", c);
     c
 }
 

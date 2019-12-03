@@ -63,7 +63,11 @@
 #endif
 
 #include <stddef.h>
-#include <stdint.h>
+
+#if defined(__wasm)
+#else
+# include <stdint.h>
+#endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #pragma warning(pop)

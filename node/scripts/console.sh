@@ -45,4 +45,18 @@ start)
     exit -1
   esac
 ;;
+llvm-env)
+  mkdir /tmp/wasmout
+  cp target/release/wbuild/target/wasm32-unknown-unknown/release/experimental_node_runtime.wasm /tmp/wasmout/final.wasm
+  sudo docker run --user 0:0 \
+    --volume /media/disk2/workspace/experimental-node/ring/wasmcore:/c:ro \
+    --volume /media/disk2/workspace/experimental-node/ring/wasmcore/libwasmcore:/c/libwasmcore \
+    --volume /tmp/wasmout/final.wasm:/tmp/final.wasm \
+    --workdir /c \
+    --interactive --tty --rm wehlutyk/wasm-compiler:0.3.0 \
+    bash
+;;
+check-nm)
+  llvm-nm-6.0 -a target/release/wbuild/target/wasm32-unknown-unknown/release/experimental_node_runtime.wasm
+;;
 esac
