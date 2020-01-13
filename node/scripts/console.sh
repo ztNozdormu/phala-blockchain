@@ -4,6 +4,7 @@ BOB_RPC_PORT=30334
 NODE_NAME=experimental-node
 
 BASE_PATH_BASE=/tmp
+SCRIPT_PATH=$(realpath $(dirname "$0"))
 
 if [[ $(pwd) == *"/staging/"* ]]; then
   BASE_PATH_BASE=/tmp/staging
@@ -72,9 +73,9 @@ check-nm)
   llvm-nm-6.0 -a target/release/wbuild/target/wasm32-unknown-unknown/release/experimental_node_runtime.wasm
 ;;
 wrap-build)
-  export PATH="/media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper:$PATH"
-  echo "$(date) | wrap-build" >> /media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper/clang.log
-  echo "$(date) | wrap-build" >> /media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper/ar.log
+  export PATH="$SCRIPT_PATH/ccwrapper:$PATH"
+  echo "$(date) | wrap-build" >> "$SCRIPT_PATH/ccwrapper/clang.log"
+  echo "$(date) | wrap-build" >> "$SCRIPT_PATH/ccwrapper/ar.log"
   shift
   cargo build --release "$@"
 esac

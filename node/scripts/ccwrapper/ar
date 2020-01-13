@@ -1,5 +1,6 @@
 #!/bin/bash
 
-echo "$(date) | wrap | ar $@" >> /media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper/ar.log
+CUR_DIR=$(dirname "$0")
+echo "$(date) | wrap | ar $@" >> "$CUR_DIR/ar.log"
 
 llvm-ar-9 "$@"

@@ -1,5 +1,6 @@
 #!/bin/bash
 
-echo "$(date) | wrap | clang $@" >> /media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper/clang.log
+CUR_DIR=$(dirname "$0")
+echo "$(date) | wrap | clang $@" >> "$CUR_DIR/clang.log"
 
 clang-9 "$@"
