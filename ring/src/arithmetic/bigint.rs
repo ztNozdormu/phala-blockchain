@@ -1271,7 +1271,6 @@ fn limbs_mont_square(r: &mut [Limb], m: &[Limb], n0: &N0) {
             n0,
             r.len(),
         );
-        a_new_function(3);
     }
 }
 
@@ -1285,13 +1284,6 @@ extern "C" {
         n0: &N0,
         num_limbs: c::size_t,
     );
-    #[cfg(target_arch = "wasm32")]
-    fn a_new_function(n: i32);
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn a_new_function(_n: i32) {
-
 }
 
 #[cfg(test)]

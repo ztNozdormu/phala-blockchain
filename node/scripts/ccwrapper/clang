@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "$(date) | wrap | clang $@" >> /media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper/clang.log
+
+clang-9 "$@"

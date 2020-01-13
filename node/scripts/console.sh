@@ -3,18 +3,30 @@
 BOB_RPC_PORT=30334
 NODE_NAME=experimental-node
 
+BASE_PATH_BASE=/tmp
+
+if [[ $(pwd) == *"/staging/"* ]]; then
+  BASE_PATH_BASE=/tmp/staging
+  mkdir $BASE_PATH_BASE
+fi
+
 case $1 in
 purge)
-  rm -rf /tmp/*alice*
-  rm -rf /tmp/*bob*
-  rm -rf /tmp/*dev*
+  rm -rf $BASE_PATH_BASE/*alice*
+  rm -rf $BASE_PATH_BASE/*bob*
+  rm -rf $BASE_PATH_BASE/*dev*
 ;;
 dev)
   shift
   "./target/release/${NODE_NAME}" \
-      --base-path /tmp/dev \
-      --chain=dev \
-      --rpc-cors=all
+      --base-path $BASE_PATH_BASE/dev \
+      --dev \
+      --rpc-cors=all \
+      --execution=Wasm \
+      --validator \
+      --listen-addr=/ip4/127.0.0.1/tcp/9998 \
+      --no-mdns
+
 ;;
 start)
   shift
@@ -22,7 +34,7 @@ start)
   alice)
     shift
     "./target/release/${NODE_NAME}" \
-        --base-path /tmp/alice \
+        --base-path $BASE_PATH_BASE/alice \
         --chain=chain.json \
         --rpc-cors all \
         --alice \
@@ -32,7 +44,7 @@ start)
   bob)
     shift
     "./target/release/${NODE_NAME}" \
-        --base-path /tmp/bob \
+        --base-path $BASE_PATH_BASE/bob \
         --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/QmY8R46KqvBHLwBBu8dE3LygvQdFa6usrfyVH6zLzzSjsg \
         --chain=chain.json \
         --rpc-cors all \
@@ -59,4 +71,10 @@ llvm-env)
 check-nm)
   llvm-nm-6.0 -a target/release/wbuild/target/wasm32-unknown-unknown/release/experimental_node_runtime.wasm
 ;;
+wrap-build)
+  export PATH="/media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper:$PATH"
+  echo "$(date) | wrap-build" >> /media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper/clang.log
+  echo "$(date) | wrap-build" >> /media/disk2/workspace/staging/experimental-node/node/scripts/ccwrapper/ar.log
+  shift
+  cargo build --release "$@"
 esac

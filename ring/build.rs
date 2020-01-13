@@ -137,6 +137,7 @@ const RING_INCLUDES: &[&str] =
       "include/GFp/cpu.h",
       "include/GFp/mem.h",
       "include/GFp/type_check.h",
+      "include/GFp/stdint.h",
       "third_party/fiat/curve25519_32.h",
       "third_party/fiat/curve25519_64.h",
       "third_party/fiat/curve25519_tables.h",
@@ -345,7 +346,8 @@ struct Target {
 fn cc_add_target_flag(builder: &mut cc::Build, target: &Target) {
     eprintln!("*** cc_add_target_flag: arch={}", target.arch);
     if target.arch == "wasm32" {
-        let _ = builder.target("wasm32-unknown-unknown");
+        let _ = builder.target("wasm32-unknown-unknown")
+                       .flag("-emit-llvm");
     }
 }
 
