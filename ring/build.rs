@@ -51,6 +51,7 @@ const NEVER: &str = "Don't ever build this file.";
 #[cfg_attr(rustfmt, rustfmt_skip)]
 const RING_SRCS: &[(&[&str], &str)] = &[
     (&[], "crypto/fipsmodule/bn/generic.c"),
+    (&[], "crypto/fipsmodule/bn/mul.c"),
     (&[], "crypto/fipsmodule/bn/montgomery.c"),
     (&[], "crypto/fipsmodule/bn/montgomery_inv.c"),
     (&[], "crypto/crypto.c"),
@@ -347,26 +348,12 @@ fn cc_add_target_flag(builder: &mut cc::Build, target: &Target) {
     eprintln!("*** cc_add_target_flag: arch={}", target.arch);
     if target.arch == "wasm32" {
         let _ = builder.target("wasm32-unknown-unknown")
-                       .flag("-emit-llvm");
+                       .flag("-emit-llvm")
+                       .flag("-fno-stack-protector");
     }
 }
 
 fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
-    // if &target.arch == "wasm32" {
-    //     return;
-    // }
-    // if &target.arch == "wasm32" {
-    //     println!("cargo:rerun-if-changed=/home/h4x/ssd2/workspace/experimental-node/ring/wasmcore/libwasmcore");
-
-    //     // let lib_dir = env::var("BAR_LIB_DIR").unwrap();
-    //     // println!("cargo:rustc-link-search=native={}", lib_dir);
-    //     // println!("cargo:rustc-link-lib=static=bar");
-    //     println!("cargo:rerun-if-env-changed=BAR_LIB_DIR");
-    //     println!("cargo:rustc-link-search=native={}", "/home/h4x/ssd2/workspace/experimental-node/ring/wasmcore/libwasmcore");
-    //     println!("cargo:rustc-link-lib=static={}", "wasmcore");  // valid!
-    //     return;
-    // }
-
     eprintln!("*** build_c_code: inline arch = {}, os = {}", target.arch, target.os);
 
     let includes_modified = RING_INCLUDES
@@ -587,7 +574,8 @@ fn cc(
     for f in cpp_flags(target) {
         let _ = c.flag(&f);
     }
-    if &target.os != "none" && &target.os != "redox" && &target.os != "windows" {
+    if &target.os != "none" && &target.os != "redox" && &target.os != "windows" &&
+       &target.arch != "wasm32" {
         let _ = c.flag("-fstack-protector");
     }
 

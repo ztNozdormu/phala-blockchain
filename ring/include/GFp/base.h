@@ -64,10 +64,15 @@
 
 #include <stddef.h>
 
-#if __wasm32__
+#if defined(__wasm32__)
 # include <GFp/stdint.h>
+# define OPENSSL_NO_ASM
 #else
 # include <stdint.h>
+#endif
+
+#ifdef OPENSSL_NO_ASM
+# define ENABLE_C_FALLBACK
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
