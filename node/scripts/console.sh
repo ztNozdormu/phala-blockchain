@@ -26,8 +26,9 @@ dev)
       --execution=Wasm \
       --validator \
       --listen-addr=/ip4/127.0.0.1/tcp/9998 \
-      --no-mdns
-
+      --no-mdns \
+      -lruntime=debug \
+      "$@"
 ;;
 dev-native)
   shift
@@ -38,8 +39,9 @@ dev-native)
       --execution=Native \
       --validator \
       --listen-addr=/ip4/127.0.0.1/tcp/9998 \
-      --no-mdns
-
+      --no-mdns \
+      -lruntime=debug \
+      "$@"
 ;;
 start)
   shift
