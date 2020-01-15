@@ -29,6 +29,18 @@ dev)
       --no-mdns
 
 ;;
+dev-native)
+  shift
+  "./target/release/${NODE_NAME}" \
+      --base-path $BASE_PATH_BASE/dev \
+      --dev \
+      --rpc-cors=all \
+      --execution=Native \
+      --validator \
+      --listen-addr=/ip4/127.0.0.1/tcp/9998 \
+      --no-mdns
+
+;;
 start)
   shift
   case $1 in
