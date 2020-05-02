@@ -14,7 +14,8 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [[bin]]
 name = "phala-node"
-path = "src/main.rs"
+path = "bin/main.rs"
+required-features = ["cli"]
 
 [dependencies]
 futures = "0.3.4"
@@ -29,8 +30,8 @@ sp-inherents = { version = "2.0.0-dev", path = "../substrate/primitives/inherent
 sc-transaction-pool = { version = "2.0.0-dev", path = "../substrate/client/transaction-pool" }
 sp-transaction-pool = { version = "2.0.0-dev", path = "../substrate/primitives/transaction-pool" }
 sc-network = { version = "0.8.0-dev", path = "../substrate/client/network" }
-sc-consensus-aura = { version = "0.8.0-dev", path = "../substrate/client/consensus/aura" }
-sp-consensus-aura = { version = "0.8.0-dev", path = "../substrate/primitives/consensus/aura" }
+sc-consensus-babe = { version = "0.8.0-dev", path = "../substrate/client/consensus/babe" }
+sp-consensus-babe = { version = "0.8.0-dev", path = "../substrate/primitives/consensus/babe" }
 sp-consensus = { version = "0.8.0-dev", path = "../substrate/primitives/consensus/common" }
 sc-consensus = { version = "0.8.0-dev", path = "../substrate/client/consensus/common" }
 sc-finality-grandpa = { version = "0.8.0-dev", path = "../substrate/client/finality-grandpa" }
@@ -39,7 +40,10 @@ sc-client-api = { version = "2.0.0-dev", path = "../substrate/client/api" }
 sp-runtime = { version = "2.0.0-dev", path = "../substrate/primitives/runtime" }
 sc-basic-authorship = { path = "../substrate/client/basic-authorship", version = "0.8.0-dev"}
 
-phala-blockchain-runtime = { version = "2.0.0-dev", path = "../runtime" }
+node-runtime = { version = "2.0.0-dev", path = "../runtime", package = "phala-blockchain-runtime" }
+node-rpc = { version = "2.0.0-dev", path = "../substrate/bin/node/rpc" }
+node-primitives = { version = "2.0.0-dev", path = "../substrate/bin/node/primitives" }
+node-executor = { version = "2.0.0-dev", path = "../substrate/bin/node/executor" }
 
 codec = { package = "parity-scale-codec", version = "1.3.0", default-features = false, features = ["derive"] }
 base64 = "*"
